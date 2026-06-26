@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/head :: head('Student Detail')}"></head>
+<body>
+<div class="overlay" onclick="toggleSidebar()"></div>
+<div th:replace="~{fragments/sidebar :: counselorSidebar}"></div>
+<div class="mobile-topbar">
+    <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;color:#fff;padding:4px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="font-display" style="color:#fff;font-size:17px;font-weight:700;">Career<span style="color:#4f6ef7;">Path</span></span>
+</div>
+<main class="main-content">
+    <div style="max-width:860px;">
+        <a th:href="@{/counselor/students}" style="font-size:13px;color:#6b7280;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:16px;">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Students
+        </a>
+
+        <div th:if="${success}" class="alert alert-success" style="margin-bottom:16px;">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span th:text="${success}"></span>
+        </div>
+
+        <!-- Student header -->
+        <div class="card" style="padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="width:60px;height:60px;border-radius:50%;background:#eef1fe;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#4f6ef7;" th:text="${student.user.fullName.charAt(0)}">A</div>
+                <div>
+                    <h1 style="font-size:20px;font-weight:800;margin:0 0 4px;" th:text="${student.user.fullName}">Student Name</h1>
+                    <p style="font-size:13px;color:#6b7280;margin:0;" th:text="${student.user.email}">email</p>
+                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                        <span class="badge badge-blue" th:if="${student.currentClass}" th:text="'Class ' + ${student.currentClass}">Class</span>
+                        <span class="badge badge-gray" th:if="${student.board}" th:text="${student.board}">Board</span>
+                        <span class="badge badge-gray" th:if="${student.school}" th:text="${student.school}">School</span>
+                    </div>
+                </div>
+            </div>
+            <a th:href="@{/counselor/student/{id}/report(id=${student.id})}" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Download PDF
+            </a>
+        </div>
+
+        <!-- Academic Performance -->
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 16px;">Academic Performance</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
+                <div style="text-align:center;padding:16px;background:#f5f6f8;border-radius:10px;">
+                    <p style="font-size:22px;font-weight:800;color:#4f6ef7;margin:0;" th:text="${student.mathMarks != null ? student.mathMarks + '%' : '—'}">—</p>
+                    <p style="font-size:12px;color:#6b7280;margin:0;margin-top:4px;">Mathematics</p>
+                </div>
+                <div style="text-align:center;padding:16px;background:#f5f6f8;border-radius:10px;">
+                    <p style="font-size:22px;font-weight:800;color:#4f6ef7;margin:0;" th:text="${student.scienceMarks != null ? student.scienceMarks + '%' : '—'}">—</p>
+                    <p style="font-size:12px;color:#6b7280;margin:0;margin-top:4px;">Science</p>
+                </div>
+                <div style="text-align:center;padding:16px;background:#f5f6f8;border-radius:10px;">
+                    <p style="font-size:22px;font-weight:800;color:#4f6ef7;margin:0;" th:text="${student.englishMarks != null ? student.englishMarks + '%' : '—'}">—</p>
+                    <p style="font-size:12px;color:#6b7280;margin:0;margin-top:4px;">English</p>
+                </div>
+                <div style="text-align:center;padding:16px;background:#eef1fe;border-radius:10px;">
+                    <p style="font-size:22px;font-weight:800;color:#1e40af;margin:0;" th:text="${student.overallPercentage != null ? student.overallPercentage + '%' : '—'}">—</p>
+                    <p style="font-size:12px;color:#6b7280;margin:0;margin-top:4px;">Overall</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Report -->
+        <div th:if="${report}" class="card" style="padding:22px;margin-bottom:20px;border-left:4px solid #4f6ef7;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 12px;">AI Career Report</h3>
+            <p style="font-size:13px;font-weight:600;color:#4f6ef7;margin:0 0 8px;">Top Match: <span th:text="${report.topCareerMatch}"></span></p>
+            <p style="font-size:13px;color:#374151;line-height:1.6;margin:0;" th:text="${report.strengths}">Strengths</p>
+        </div>
+
+        <!-- Counselor Notes -->
+        <div class="card" style="padding:22px;margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 16px;">Counselor Notes</h3>
+
+            <form th:action="@{/counselor/note/add}" method="post" style="margin-bottom:20px;">
+                <input type="hidden" name="studentId" th:value="${student.id}"/>
+                <div style="display:flex;gap:10px;align-items:flex-end;">
+                    <div style="flex:1;">
+                        <textarea class="form-input" name="noteText" rows="2" placeholder="Add a note about this student..." style="resize:vertical;" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="flex-shrink:0;">Add Note</button>
+                </div>
+            </form>
+
+            <div th:if="${notes == null or notes.isEmpty()}" style="text-align:center;padding:20px 0;">
+                <p style="font-size:13px;color:#9ca3af;">No notes yet. Add the first one above.</p>
+            </div>
+            <div th:each="note : ${notes}" style="padding:14px;background:#f5f6f8;border-radius:10px;margin-bottom:10px;">
+                <p style="font-size:14px;color:#374151;margin:0 0 8px;line-height:1.5;" th:text="${note.noteText}">Note text</p>
+                <p style="font-size:12px;color:#9ca3af;margin:0;" th:text="${#temporals.format(note.createdAt, 'dd MMM yyyy, HH:mm')}">Date</p>
+            </div>
+        </div>
+
+    </div>
+</main>
+<div th:replace="~{fragments/sidebar :: mobileScript}"></div>
+</body>
+</html>
