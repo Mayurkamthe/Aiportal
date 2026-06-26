@@ -94,6 +94,39 @@ public class OpenRouterService {
     }
 
     /**
+     * Generate assessment questions using AI
+     * Returns a JSON array of question objects
+     */
+    public String generateQuestions(String questionType, String topic, int count) {
+        String systemPrompt = """
+            You are an expert exam question creator for student career assessments in India.
+            Generate exactly the requested number of MCQ questions.
+            Respond ONLY with a valid JSON array. No markdown, no explanation, no extra text.
+            Each object must have these exact keys:
+            {
+              "questionText": "The full question text",
+              "optionA": "First option",
+              "optionB": "Second option",
+              "optionC": "Third option",
+              "optionD": "Fourth option",
+              "correctAnswer": "A"
+            }
+            For PERSONALITY and INTEREST questions, correctAnswer should be null.
+            For APTITUDE questions, correctAnswer must be A, B, C, or D.
+            Make questions unique, relevant, and appropriate for 11th/12th grade students.
+            """;
+
+        String userMessage = String.format(
+            "Generate %d %s type questions%s. Return ONLY the JSON array.",
+            count,
+            questionType,
+            topic != null && !topic.isBlank() ? " on the topic: " + topic : ""
+        );
+
+        return chat(systemPrompt, userMessage);
+    }
+
+    /**
      * AI chat for career questions
      */
     public String careerChat(String studentContext, String question) {

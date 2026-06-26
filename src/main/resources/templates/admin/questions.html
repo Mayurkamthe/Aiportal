@@ -20,6 +20,10 @@
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Add Question
         </a>
+        <button onclick="openAiModal()" class="btn" style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;border:none;display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            Generate with AI
+        </button>
     </div>
 
     <div th:if="${success}" class="alert alert-success" style="margin-bottom:16px;">
@@ -84,6 +88,65 @@
     </div>
 </main>
 <div th:replace="~{fragments/sidebar :: mobileScript}"></div>
+
+<!-- AI Generate Modal -->
+<div id="aiModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:18px;padding:32px;width:100%;max-width:480px;margin:16px;box-shadow:0 24px 64px rgba(0,0,0,0.18);animation:slideUp .25s ease;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+            <div style="width:42px;height:42px;background:linear-gradient(135deg,#7c3aed,#4f6ef7);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#fff"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <div>
+                <h2 style="margin:0;font-size:18px;font-weight:700;color:#0f1117;">AI Question Generator</h2>
+                <p style="margin:2px 0 0;font-size:13px;color:#6b7280;">Auto-create questions using AI</p>
+            </div>
+            <button onclick="closeAiModal()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Question Type *</label>
+                <select id="aiType" style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:14px;outline:none;color:#0f1117;background:#fff;">
+                    <option value="APTITUDE">Aptitude (with correct answers)</option>
+                    <option value="INTEREST">Interest / Career Preference</option>
+                    <option value="PERSONALITY">Personality Assessment</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Topic / Subject <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
+                <input id="aiTopic" type="text" placeholder="e.g. Mathematics, Logical Reasoning, Leadership..."
+                    style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:14px;outline:none;color:#0f1117;box-sizing:border-box;"/>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Number of Questions: <span id="countLabel" style="color:#4f6ef7;">5</span></label>
+                <input id="aiCount" type="range" min="1" max="20" value="5" oninput="document.getElementById('countLabel').textContent=this.value"
+                    style="width:100%;accent-color:#4f6ef7;"/>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;margin-top:2px;"><span>1</span><span>20</span></div>
+            </div>
+
+            <!-- Status area -->
+            <div id="aiStatus" style="display:none;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:500;"></div>
+
+            <div style="display:flex;gap:10px;margin-top:4px;">
+                <button onclick="closeAiModal()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:9px;background:#fff;color:#374151;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+                <button id="aiGenerateBtn" onclick="generateQuestions()" style="flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Generate Questions
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <script>
 function filterType(type) {
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -96,6 +159,74 @@ function filterType(type) {
         row.style.display = (type === 'ALL' || row.dataset.type === type) ? '' : 'none';
     });
 }
+
+function openAiModal() {
+    const m = document.getElementById('aiModal');
+    m.style.display = 'flex';
+    document.getElementById('aiStatus').style.display = 'none';
+    document.getElementById('aiGenerateBtn').disabled = false;
+    document.getElementById('aiGenerateBtn').innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate Questions`;
+}
+
+function closeAiModal() {
+    document.getElementById('aiModal').style.display = 'none';
+}
+
+function generateQuestions() {
+    const type = document.getElementById('aiType').value;
+    const topic = document.getElementById('aiTopic').value;
+    const count = document.getElementById('aiCount').value;
+    const btn = document.getElementById('aiGenerateBtn');
+    const status = document.getElementById('aiStatus');
+
+    btn.disabled = true;
+    btn.innerHTML = `<svg style="animation:spin 1s linear infinite" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Generating ${count} questions with AI...`;
+
+    status.style.display = 'flex';
+    status.style.alignItems = 'center';
+    status.style.gap = '10px';
+    status.style.background = '#eff6ff';
+    status.style.color = '#1d4ed8';
+    status.style.border = '1px solid #bfdbfe';
+    status.innerHTML = `<svg style="animation:spin 1s linear infinite;flex-shrink:0" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> AI is crafting ${count} ${type} questions... This may take a few seconds.`;
+
+    const formData = new FormData();
+    formData.append('questionType', type);
+    formData.append('topic', topic);
+    formData.append('count', count);
+
+    fetch('/admin/questions/ai-generate', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                status.style.background = '#f0fdf4';
+                status.style.color = '#15803d';
+                status.style.border = '1px solid #bbf7d0';
+                status.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> ${data.message}`;
+                btn.innerHTML = `✓ Done! Reloading...`;
+                setTimeout(() => { window.location.reload(); }, 1500);
+            } else {
+                status.style.background = '#fef2f2';
+                status.style.color = '#991b1b';
+                status.style.border = '1px solid #fecaca';
+                status.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ${data.message}`;
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Try Again`;
+            }
+        })
+        .catch(err => {
+            status.style.background = '#fef2f2';
+            status.style.color = '#991b1b';
+            status.style.border = '1px solid #fecaca';
+            status.innerHTML = `Network error: ${err.message}`;
+            btn.disabled = false;
+            btn.innerHTML = `Try Again`;
+        });
+}
+
+document.getElementById('aiModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAiModal();
+});
 </script>
 </body>
 </html>

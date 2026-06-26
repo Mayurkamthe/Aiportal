@@ -10,6 +10,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
 import java.util.*;
 
 /**
@@ -29,6 +32,8 @@ public class AdminController {
     @Autowired private InternshipRepository internshipRepo;
     @Autowired private SystemSettingsRepository settingsRepo;
     @Autowired private AIReportRepository aiReportRepo;
+    @Autowired private OpenRouterService openRouterService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private User getAdmin(HttpSession session) {
         if (!SessionUtil.isLoggedIn(session) || !"ADMIN".equals(SessionUtil.getRole(session))) return null;
@@ -143,6 +148,77 @@ public class AdminController {
         questionRepo.deleteById(id);
         redirect.addFlashAttribute("success", "Question deleted.");
         return "redirect:/admin/questions";
+    }
+
+    // ======================== AI QUESTION GENERATION ========================
+    @PostMapping("/questions/ai-generate")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> aiGenerateQuestions(
+            @RequestParam String questionType,
+            @RequestParam(required = false) String topic,
+            @RequestParam(defaultValue = "5") int count,
+            HttpSession session) {
+
+        Map<String, Object> result = new HashMap<>();
+        if (getAdmin(session) == null) {
+            result.put("success", false);
+            result.put("message", "Unauthorized");
+            return ResponseEntity.status(401).body(result);
+        }
+
+        if (count < 1) count = 5;
+        if (count > 20) count = 20;
+
+        try {
+            String aiResponse = openRouterService.generateQuestions(questionType, topic, count);
+
+            // Handle API key not configured
+            if (aiResponse.startsWith("⚠️") || aiResponse.startsWith("❌")) {
+                result.put("success", false);
+                result.put("message", aiResponse);
+                return ResponseEntity.ok(result);
+            }
+
+            // Strip markdown code fences if present
+            String json = aiResponse.trim();
+            if (json.startsWith("```")) {
+                json = json.replaceAll("```[a-zA-Z]*", "").replace("```", "").trim();
+            }
+
+            JsonNode arr = objectMapper.readTree(json);
+            if (!arr.isArray()) {
+                result.put("success", false);
+                result.put("message", "AI returned invalid format. Try again.");
+                return ResponseEntity.ok(result);
+            }
+
+            List<Question> saved = new ArrayList<>();
+            for (JsonNode node : arr) {
+                Question q = new Question();
+                q.setQuestionType(questionType);
+                q.setQuestionText(node.path("questionText").asText(""));
+                q.setOptionA(node.path("optionA").asText(null));
+                q.setOptionB(node.path("optionB").asText(null));
+                q.setOptionC(node.path("optionC").asText(null));
+                q.setOptionD(node.path("optionD").asText(null));
+                String ans = node.path("correctAnswer").asText(null);
+                q.setCorrectAnswer("null".equals(ans) ? null : ans);
+                q.setActive(true);
+                if (!q.getQuestionText().isBlank()) {
+                    saved.add(questionRepo.save(q));
+                }
+            }
+
+            result.put("success", true);
+            result.put("count", saved.size());
+            result.put("message", saved.size() + " questions generated and saved successfully!");
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
     }
 
     // ======================== CAREERS ========================
