@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/head :: head('Courses')}"></head>
+<body>
+<div class="overlay" onclick="toggleSidebar()"></div>
+<div th:replace="~{fragments/sidebar :: studentSidebar}"></div>
+<div class="mobile-topbar">
+    <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;color:#fff;padding:4px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="font-display" style="color:#fff;font-size:17px;font-weight:700;">Career<span style="color:#4f6ef7;">Path</span></span>
+</div>
+<main class="main-content">
+    <div style="margin-bottom:24px;">
+        <h1 class="section-title">Recommended Courses</h1>
+        <p class="section-sub">Courses curated to help you reach your career goals.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+        <div th:each="course : ${courses}" class="card" style="padding:22px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <span class="badge badge-blue" th:text="${course.category}">Category</span>
+                <span class="badge" th:classappend="${course.level == 'Beginner'} ? 'badge-green' : (${course.level == 'Advanced'} ? 'badge-red' : 'badge-amber')" th:text="${course.level}">Level</span>
+            </div>
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;" th:text="${course.title}">Course Title</h3>
+            <p style="font-size:13px;color:#6b7280;margin:0 0 auto;line-height:1.5;padding-bottom:14px;" th:text="${course.description}">Description</p>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding-top:14px;border-top:1px solid #f3f4f6;">
+                <span style="font-size:13px;color:#374151;font-weight:600;" th:text="${course.provider}">Provider</span>
+                <span style="font-size:13px;color:#6b7280;" th:text="${course.duration}">Duration</span>
+                <span style="font-size:14px;font-weight:700;color:#15803d;margin-left:auto;" th:text="${course.price}">Free</span>
+            </div>
+            <a th:if="${course.url}" th:href="${course.url}" target="_blank" class="btn btn-primary" style="margin-top:14px;justify-content:center;">
+                Enroll Now →
+            </a>
+        </div>
+    </div>
+    <div th:if="${courses == null or courses.isEmpty()}" class="card" style="padding:48px;text-align:center;">
+        <p style="font-size:15px;font-weight:600;color:#374151;margin:0;">No courses available yet.</p>
+    </div>
+</main>
+<div th:replace="~{fragments/sidebar :: mobileScript}"></div>
+</body>
+</html>

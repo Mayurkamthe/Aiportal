@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/head :: head('Counselor Dashboard')}"></head>
+<body>
+<div class="overlay" onclick="toggleSidebar()"></div>
+<div th:replace="~{fragments/sidebar :: counselorSidebar}"></div>
+<div class="mobile-topbar">
+    <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;color:#fff;padding:4px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="font-display" style="color:#fff;font-size:17px;font-weight:700;">Career<span style="color:#4f6ef7;">Path</span></span>
+</div>
+<main class="main-content">
+    <div style="margin-bottom:28px;">
+        <h1 class="section-title" th:text="'Welcome, ' + ${counselor.fullName}">Welcome, Counselor</h1>
+        <p class="section-sub">Manage and guide your assigned students.</p>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
+        <div class="stat-card">
+            <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin:0 0 8px;">My Students</p>
+            <p class="font-display" style="font-size:32px;font-weight:800;margin:0;color:#4f6ef7;" th:text="${totalStudents}">0</p>
+        </div>
+    </div>
+
+    <!-- Students list -->
+    <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <h2 style="font-size:15px;font-weight:700;margin:0;">Assigned Students</h2>
+            <a th:href="@{/counselor/students}" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div th:if="${students == null or students.isEmpty()}" style="padding:48px;text-align:center;">
+            <p style="font-size:14px;color:#9ca3af;">No students assigned yet.</p>
+        </div>
+        <div style="overflow-x:auto;" th:unless="${students == null or students.isEmpty()}">
+            <table>
+                <thead><tr>
+                    <th>Student</th>
+                    <th>Class</th>
+                    <th>School</th>
+                    <th>Report</th>
+                    <th>Action</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="s : ${students}">
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:50%;background:#eef1fe;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#4f6ef7;" th:text="${s.user.fullName.charAt(0)}">A</div>
+                            <div>
+                                <p style="font-size:14px;font-weight:600;margin:0;" th:text="${s.user.fullName}">Name</p>
+                                <p style="font-size:12px;color:#6b7280;margin:0;" th:text="${s.user.email}">email</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td th:text="${s.currentClass != null ? 'Class ' + s.currentClass : '—'}">—</td>
+                    <td th:text="${s.school != null ? s.school : '—'}">—</td>
+                    <td>
+                        <span class="badge badge-green" th:if="${s.careerGoal != null}">Report Ready</span>
+                        <span class="badge badge-gray" th:unless="${s.careerGoal != null}">Pending</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/counselor/student/{id}(id=${s.id})}" class="btn btn-ghost btn-sm">View</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+<div th:replace="~{fragments/sidebar :: mobileScript}"></div>
+</body>
+</html>

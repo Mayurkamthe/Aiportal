@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/head :: head('AI Reports')}"></head>
+<body>
+<div class="overlay" onclick="toggleSidebar()"></div>
+<div th:replace="~{fragments/sidebar :: adminSidebar}"></div>
+<div class="mobile-topbar">
+    <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;color:#fff;padding:4px;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="font-display" style="color:#fff;font-size:17px;font-weight:700;">Career<span style="color:#4f6ef7;">Path</span></span>
+</div>
+<main class="main-content">
+    <div style="margin-bottom:24px;">
+        <h1 class="section-title">AI Career Reports</h1>
+        <p class="section-sub">All generated AI career reports across students.</p>
+    </div>
+
+    <div class="card" style="overflow:hidden;padding:0;">
+        <div style="padding:14px 20px;border-bottom:1px solid #e5e7eb;">
+            <input type="text" id="searchInput" placeholder="Search by student or career..." onkeyup="filterTable()" class="form-input" style="max-width:320px;"/>
+        </div>
+        <div style="overflow-x:auto;">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Top Career Match</th>
+                        <th>Match Score</th>
+                        <th>Generated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="r : ${reports}">
+                        <td>
+                            <p style="font-size:14px;font-weight:600;margin:0;" th:text="${r.student != null ? r.student.user.fullName : 'Unknown'}">Name</p>
+                            <p style="font-size:12px;color:#6b7280;margin:0;" th:text="${r.student != null ? r.student.user.email : ''}">email</p>
+                        </td>
+                        <td>
+                            <span style="font-size:14px;font-weight:600;color:#4f6ef7;" th:text="${r.topCareerMatch}">Career</span>
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div class="progress-bar" style="width:80px;">
+                                    <div class="progress-fill" th:style="'width:' + ${r.matchScore != null ? r.matchScore : 0} + '%'"></div>
+                                </div>
+                                <span style="font-size:13px;font-weight:600;" th:text="${r.matchScore != null ? r.matchScore + '%' : '—'}">—</span>
+                            </div>
+                        </td>
+                        <td style="font-size:13px;color:#6b7280;" th:text="${r.generatedAt != null ? #temporals.format(r.generatedAt, 'dd MMM yyyy') : '—'}">Date</td>
+                        <td>
+                            <a th:if="${r.student != null}" th:href="@{/counselor/student/{id}/report(id=${r.student.id})}" class="btn btn-ghost btn-sm">PDF</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:if="${reports == null or reports.isEmpty()}" style="padding:48px;text-align:center;">
+            <p style="font-size:14px;color:#9ca3af;">No AI reports generated yet.</p>
+        </div>
+    </div>
+</main>
+<div th:replace="~{fragments/sidebar :: mobileScript}"></div>
+<script>
+function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('#reportTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+</body>
+</html>
