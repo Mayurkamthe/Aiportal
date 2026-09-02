@@ -2,30 +2,27 @@ package com.careerportal.service;
 
 import com.careerportal.entity.SystemSettings;
 import com.careerportal.repository.SystemSettingsRepository;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Optional;
 
 /**
- * OpenRouterService - handles all AI calls via OpenRouter, using Spring AI's
- * OpenAI-compatible ChatClient (OpenRouter exposes an OpenAI-compatible API,
- * so Spring AI's regular OpenAI client works against it with a custom base URL).
- *
- * The API key/model are still pulled dynamically from Admin -> System Settings
- * on every call (not from application.properties), so the admin panel's
- * "change key without restarting" behavior is preserved.
+ * OpenRouterService - handles all AI API calls via OpenRouter
+ * Supports Gemini, GPT, Claude, DeepSeek models
  */
 @Service
 public class OpenRouterService {
 
-    @Value("${app.openrouter.base-url}")
-    private String baseUrl;
+    @Value("${app.openrouter.api-url}")
+    private String apiUrl;
 
     @Value("${app.openrouter.model}")
     private String defaultModel;
@@ -33,23 +30,38 @@ public class OpenRouterService {
     @Autowired
     private SystemSettingsRepository settingsRepo;
 
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
+
     /**
      * Send a message to OpenRouter AI and get response
      */
     public String chat(String systemPrompt, String userMessage) {
-        String apiKey = getApiKey();
-        if (apiKey == null || apiKey.equals("YOUR_API_KEY_HERE") || apiKey.isBlank()) {
-            return "⚠️ OpenRouter API key not configured. Please go to Admin → System Settings and add your API key from https://openrouter.ai";
-        }
-
         try {
-            ChatClient chatClient = buildChatClient(getModel(), apiKey);
+            String apiKey = getApiKey();
+            if (apiKey == null || apiKey.equals("YOUR_API_KEY_HERE") || apiKey.isBlank()) {
+                return "⚠️ OpenRouter API key not configured. Please go to Admin → System Settings and add your API key from https://openrouter.ai";
+            }
 
-            return chatClient.prompt()
-                    .system(systemPrompt)
-                    .user(userMessage)
-                    .call()
-                    .content();
+            String model = getModel();
+            String requestBody = buildRequestBody(systemPrompt, userMessage, model);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("HTTP-Referer", "http://localhost:8080")
+                    .header("X-Title", "AI Career Portal")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                return extractResponse(response.body());
+            } else {
+                return "❌ AI Error (Status " + response.statusCode() + "): Please check your API key and try again.";
+            }
 
         } catch (Exception e) {
             return "❌ Error calling AI: " + e.getMessage();
@@ -127,26 +139,40 @@ public class OpenRouterService {
         return chat(systemPrompt, question);
     }
 
-    /**
-     * Build a fresh ChatClient pointed at OpenRouter, using whatever key/model
-     * is currently stored in the DB. Built per-call (not cached as a bean) so
-     * an admin changing the key in System Settings takes effect immediately.
-     */
-    private ChatClient buildChatClient(String model, String apiKey) {
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .baseUrl(baseUrl)
-                .apiKey(apiKey)
-                .build();
+    // Build JSON request body
+    private String buildRequestBody(String systemPrompt, String userMessage, String model) {
+        return String.format("""
+            {
+                "model": "%s",
+                "max_tokens": 1500,
+                "messages": [
+                    {"role": "system", "content": %s},
+                    {"role": "user", "content": %s}
+                ]
+            }
+            """,
+                model,
+                toJsonString(systemPrompt),
+                toJsonString(userMessage));
+    }
 
-        OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(OpenAiChatOptions.builder()
-                        .model(model)
-                        .maxTokens(1500)
-                        .build())
-                .build();
+    // Extract text from API response
+    private String extractResponse(String responseBody) {
+        try {
+            JsonNode root = mapper.readTree(responseBody);
+            return root.path("choices").get(0).path("message").path("content").asText();
+        } catch (Exception e) {
+            return "Error parsing response: " + e.getMessage();
+        }
+    }
 
-        return ChatClient.builder(chatModel).build();
+    // Safely escape string for JSON
+    private String toJsonString(String text) {
+        try {
+            return mapper.writeValueAsString(text);
+        } catch (Exception e) {
+            return "\"" + text.replace("\"", "\\\"") + "\"";
+        }
     }
 
     // Get API key from settings
